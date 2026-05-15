@@ -1,0 +1,69 @@
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from puzzle_generator import load_word_bank, get_theme_words, create_grid, place_words, fill_empty_spaces, verify_words
+
+# Generate puzzle
+grid_size = 15
+word_bank = load_word_bank()
+
+theme = input("Enter puzzle theme from: " + " - ".join(word_bank.keys()) + ": ")
+
+words = get_theme_words(theme, word_bank)
+grid = create_grid(grid_size)
+place_words(grid, words, grid_size)
+fill_empty_spaces(grid, grid_size)
+verify_words(grid, words, grid_size, debug=False)
+
+# Create PDF
+output = r"C:\Users\dell\OneDrive\Desktop\Python\puzzle.pdf"
+c = canvas.Canvas(output, pagesize=A4)
+
+# Title
+c.setFont("Helvetica-Bold", 24)
+c.drawCentredString(297, 800, "WORD SEARCH PUZZLE")
+
+# Subtitle
+c.setFont("Helvetica", 14)
+c.drawCentredString(297, 775, f"Theme: {theme.upper()}")
+
+# Grid settings
+cell_size = 30
+start_x = 50
+start_y = 720
+
+# Draw grid lines
+for i in range(grid_size + 1):
+    c.line(start_x, start_y - i * cell_size,
+           start_x + grid_size * cell_size, start_y - i * cell_size)
+    c.line(start_x + i * cell_size, start_y,
+           start_x + i * cell_size, start_y - grid_size * cell_size)
+
+# Place letters in grid
+c.setFont("Helvetica-Bold", 16)
+for r, row in enumerate(grid):
+    for col, letter in enumerate(row):
+        x = start_x + col * cell_size + cell_size / 2
+        y = start_y - r * cell_size - cell_size * 0.7
+        c.drawCentredString(x, y, letter)
+
+
+# List words to find
+# Word list at bottom
+words_per_row = 5
+word_start_y = start_y - grid_size * cell_size - 30  # 30 points below grid
+
+c.setFont("Helvetica-Bold", 14)
+c.drawCentredString(297, word_start_y, "WORDS TO FIND:")
+
+c.setFont("Helvetica", 12)
+for i, word in enumerate(words):
+    row = i // words_per_row        # which row of words
+    col = i % words_per_row         # which column
+    
+    x = 75 + col * 100              # spread words horizontally
+    y = word_start_y - 20 - row * 20  # move down for each row
+    
+    c.drawString(x, y, word)
+
+c.save()
+print(f"PDF saved to: {output}")
